@@ -564,6 +564,7 @@ namespace linalg
     enum z_range { neg_one_to_one, zero_to_one };   // Should projection matrices map z into the range of [-1,1] or [0,1]?
     template<class T> vec<T,4>   rotation_quat     (const vec<T,3> & axis, T angle)         { return {axis*std::sin(angle/2), std::cos(angle/2)}; }
     template<class T> vec<T,4>   rotation_quat     (const mat<T,3,3> & m);
+    template<class T> vec<T,4>   rotation_quat     (const vec<T,3> & euler_angles); //roll-pitch-yaw order
     template<class T> mat<T,4,4> translation_matrix(const vec<T,3> & translation)           { return {{1,0,0,0},{0,1,0,0},{0,0,1,0},{translation,1}}; }
     template<class T> mat<T,4,4> rotation_matrix   (const vec<T,4> & rotation)              { return {{qxdir(rotation),0}, {qydir(rotation),0}, {qzdir(rotation),0}, {0,0,0,1}}; }
     template<class T> mat<T,4,4> scaling_matrix    (const vec<T,3> & scaling)               { return {{scaling.x,0,0,0}, {0,scaling.y,0,0}, {0,0,scaling.z,0}, {0,0,0,1}}; }
@@ -684,6 +685,26 @@ template<class T> linalg::vec<T,4> linalg::rotation_quat(const mat<T,3,3> & m)
         {m.x.z + m.z.x, m.y.z + m.z.y, 1, m.x.y - m.y.x},
         {m.y.z - m.z.y, m.z.x - m.x.z, m.x.y - m.y.x, 1}};
     return copysign(normalize(sqrt(max(T(0), T(1)+q))), s[argmax(q)]);
+}
+
+template<class T> linalg::vec<T,4> linalg::rotation_quat(const vec<T,3> & euler_angles)
+{
+	float cr = std::cos(euler_angles[0] * 0.5f);
+	float sr = std::sin(euler_angles[0] * 0.5f);
+	float cp = std::cos(euler_angles[1] * 0.5f);
+	float sp = std::sin(euler_angles[1] * 0.5f);
+	float cy = std::cos(euler_angles[2] * 0.5f);
+	float sy = std::sin(euler_angles[2] * 0.5f);
+
+	const vec<T,4> q
+	{
+		cy* cp* sr - sy * sp * cr,
+		sy * cp * sr + cy * sp * cr,
+		sy * cp * cr - cy * sp * sr,
+		cy * cp * cr + sy * sp * sr
+	};
+	
+	return q;
 }
 
 template<class T> linalg::mat<T,4,4> linalg::frustum_matrix(T x0, T x1, T y0, T y1, T n, T f, fwd_axis a, z_range z) 
